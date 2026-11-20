@@ -126,6 +126,44 @@
     return shape;
   }
 
+  function paintFinaleHeart(canvas) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const shape = heartPath();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height * .48);
+    ctx.scale(canvas.width * .38, canvas.width * .38);
+
+    const glow = ctx.createLinearGradient(-.82, -.88, .63, .76);
+    glow.addColorStop(0, "#ffdfbf");
+    glow.addColorStop(.38, "#f496ad");
+    glow.addColorStop(.76, "#d25e85");
+    glow.addColorStop(1, "#9a446e");
+    ctx.fillStyle = glow;
+    ctx.fill(shape);
+
+    ctx.save();
+    ctx.clip(shape);
+    const shine = ctx.createRadialGradient(-.48, -.57, 0, -.48, -.57, .92);
+    shine.addColorStop(0, "#fff5d68c");
+    shine.addColorStop(1, "#fff5d600");
+    ctx.fillStyle = shine;
+    ctx.fillRect(-1.2, -1, 2.4, 2);
+    for (let i = 0; i < 126; i++) {
+      const x = ((i * .618034) % 1) * 2.2 - 1.1;
+      const y = ((i * .414214) % 1) * 1.85 - .9;
+      const size = .009 + (i % 7) * .0048;
+      paintHeart(ctx, shape, x, y, size, Math.sin(i) * .68, i % 4 ? "#fff0d73c" : "#ffe0b994");
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = "#ffe9dd9e";
+    ctx.lineWidth = .013;
+    ctx.stroke(shape);
+    ctx.restore();
+  }
+
   function makeBlossoms(random) {
     const blossoms = [];
     while (blossoms.length < 720) {
@@ -1273,6 +1311,6 @@
     };
   }
 
-  window.LoveLetter = { start };
+  window.LoveLetter = { start, paintFinaleHeart };
 })(window);
 
