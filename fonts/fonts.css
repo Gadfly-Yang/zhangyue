@@ -1,0 +1,9 @@
+/* 站内自托管字体子集：仅包含本站实际用到的字形 */
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('cormorant-garamond-500.woff2') format('woff2');}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url('cormorant-garamond-600.woff2') format('woff2');}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:700;font-display:swap;src:url('cormorant-garamond-700.woff2') format('woff2');}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url('cormorant-garamond-500-italic.woff2') format('woff2');}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-display:swap;src:url('cormorant-garamond-600-italic.woff2') format('woff2');}
+@font-face{font-family:'Noto Serif SC';font-style:normal;font-weight:400;font-display:swap;src:url('noto-serif-sc-400.woff2') format('woff2');}
+@font-face{font-family:'Noto Serif SC';font-style:normal;font-weight:600;font-display:swap;src:url('noto-serif-sc-600.woff2') format('woff2');}
+@font-face{font-family:'Ma Shan Zheng';font-style:normal;font-weight:400;font-display:swap;src:url('ma-shan-zheng-400.woff2') format('woff2');}
