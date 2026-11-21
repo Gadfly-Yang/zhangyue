@@ -937,8 +937,8 @@
       ctx.drawImage(wood.canvas, 0, 0);
       const needles = chapterCanopies[chapter.id];
       if (needles) {
-        const leaves = chapter.id === "fall" ? 1 - .41 * smooth((elapsed - chapter.starts[1]) / 4.3)
-          : .20 + .8 * smooth((elapsed - chapter.starts[4]) / (chapter.starts[7] - chapter.starts[4]));
+        const leaves = chapter.id === "fall" ? 1 - .41 * smooth((elapsed - chapter.cues[1]) / 4.3)
+          : .20 + .8 * smooth((elapsed - chapter.cues[4]) / (chapter.cues[7] - chapter.cues[4]));
         drawCanopy(ctx, needles, motionTime, leaves, Math.sin(change * Math.PI) * .27, reduce);
       } else {
         ctx.strokeStyle = "#f2f6f3be";

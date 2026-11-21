@@ -70,18 +70,28 @@
 
   function create(chapter) {
     const initial = { ...BASE_POSE, ...({ fall: SUMMER_END, winter: FALL_END, spring: WINTER_END }[chapter.id]) };
+    // Several gestures can share a verse. Fractions place them between line reveals.
+    const cueLines = {
+      fall: [0, 1, 1.4, 1.75, 2, 2.6, 3, 3.5, 4, 5, 6, 6.6, 7, 7.5, 8, 9, 10, 10.6, 11, 12, 13],
+      winter: [0, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 8.55, 9, 10, 11, 12, 12.65, 13],
+      spring: [0, 1, 2, 2.5, 3, 4, 5, 5.5, 6, 6.5, 7, 8, 9, 9.6, 10, 11, 12, 13]
+    };
+    const cues = cueLines[chapter.id].map(line => {
+      const index = Math.floor(line);
+      return mix(chapter.starts[index], chapter.starts[index + 1] ?? chapter.duration, line - index);
+    });
     const stops = [[0, initial]];
     let previous = initial;
     EDITS[chapter.id].forEach(([line, seconds, change]) => {
-      const start = chapter.starts[line];
-      const end = Math.min(start + seconds, chapter.starts[line + 1] || chapter.duration);
+      const start = cues[line];
+      const end = Math.min(start + seconds, cues[line + 1] || chapter.duration);
       const target = { ...previous, ...change };
       target.strideM = previous.strideM + (target.man - previous.man) * TAU / (change.run ? 58 : 46);
       target.strideW = previous.strideW + (target.woman - previous.woman) * TAU / 43;
       stops.push([start, previous], [end, target]);
       previous = target;
     });
-    return { ...chapter, stops };
+    return { ...chapter, stops, cues };
   }
 
   function poseAt(chapter, time) {
@@ -110,7 +120,7 @@
       const scale = woman ? 1.19 : 1.25;
       // Shape the free hand independently of the hand that meets the partner.
       const cue = (line, duration, delay = 0) => {
-        const start = chapter.starts[line] + delay;
+        const start = chapter.cues[line] + delay;
         return arc(elapsed, start, start + duration, Math.min(.58, duration / 3));
       };
       const autumn = chapter.id === "fall", winter = chapter.id === "winter";
@@ -175,7 +185,7 @@
   }
 
   function sky(ctx, chapter, elapsed, still) {
-    const at = chapter.starts;
+    const at = chapter.cues;
     const t = still ? 0 : elapsed;
     if (chapter.id === "fall") {
       const cloud = arc(elapsed, at[8] - .8, at[14], 1.8);
@@ -210,8 +220,8 @@
     water.addColorStop(1, "#e1dbbc00");
     oval(ctx, 0, 0, 1, 1, water);
     ctx.restore();
-    const shine = id === "fall" ? ease((elapsed - chapter.starts[16]) / 2.1)
-      : id === "winter" ? ease((elapsed - chapter.starts[14]) / 2.5) * .58 : .42;
+    const shine = id === "fall" ? ease((elapsed - chapter.cues[16]) / 2.1)
+      : id === "winter" ? ease((elapsed - chapter.cues[14]) / 2.5) * .58 : .42;
     for (let i = 0; i < 18; i++) {
       const wave = .5 + .5 * Math.sin(i * 1.48 + t * .86);
       const x = 155 + (i * 71) % 625 + wave * 9;
@@ -236,7 +246,7 @@
   function stage(ctx, chapter, elapsed, ground, still) {
     const pose = poseAt(chapter, elapsed);
     if (chapter.id === "spring") {
-      const visible = ease((elapsed - chapter.starts[11] + .55) / 2.25);
+      const visible = ease((elapsed - chapter.cues[11] + .55) / 2.25);
       ctx.save();
       ctx.globalAlpha *= visible;
       ctx.strokeStyle = "#aa8274";
@@ -264,8 +274,8 @@
     }
     if (chapter.id === "fall") {
       ctx.save();
-      ctx.globalAlpha *= arc(elapsed, chapter.starts[5], chapter.starts[8], 1);
-      const growth = ease((elapsed - chapter.starts[6]) / 2);
+      ctx.globalAlpha *= arc(elapsed, chapter.cues[5], chapter.cues[8], 1);
+      const growth = ease((elapsed - chapter.cues[6]) / 2);
       const center = (pose.man + pose.woman) / 2;
       oval(ctx, center, ground + 2, 12, 2.7, "#7f6944");
       for (const direction of [-1, 1]) {
@@ -274,7 +284,7 @@
       ctx.restore();
     }
     if (chapter.id === "winter") {
-      const sunset = ease((elapsed - chapter.starts[14]) / 3.8);
+      const sunset = ease((elapsed - chapter.cues[14]) / 3.8);
       ctx.save();
       ctx.globalAlpha *= sunset * .28;
       for (const x of [pose.man, pose.woman]) {
@@ -286,7 +296,7 @@
         ctx.globalAlpha *= sunset * .28;
       }
       ctx.restore();
-      if (!still && elapsed < chapter.starts[6]) {
+      if (!still && elapsed < chapter.cues[6]) {
         const t = (elapsed * .65) % 1;
         ctx.save();
         ctx.globalAlpha *= Math.sin(Math.PI * t) * .6;
@@ -300,7 +310,7 @@
     const winter = chapter.id === "winter";
     const spring = chapter.id === "spring";
     if (spring) {
-      const willow = ease((elapsed - chapter.starts[12]) / 2.1);
+      const willow = ease((elapsed - chapter.cues[12]) / 2.1);
       ctx.save();
       ctx.globalAlpha *= willow * .86;
       ctx.lineWidth = 1.3;
