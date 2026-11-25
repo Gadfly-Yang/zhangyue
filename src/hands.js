@@ -69,7 +69,6 @@ export class HandCamera {
       const fileset = await withTimeout(FilesetResolver.forVisionTasks(WASM), 30000, '手势引擎初始化超时，请重试');
       onStatus('正在下载手势模型…');
       const modelBuf = await fetchModel(MODEL, onStatus);
-      onStatus('正在初始化手势识别…');
       const make = (delegate) => HandLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetBuffer: modelBuf, delegate },
         runningMode: 'VIDEO', numHands: 2,
@@ -77,14 +76,23 @@ export class HandCamera {
       });
       const wantsCpu = new URLSearchParams(location.search).get('gpu') === '0';
       let delegate = wantsCpu ? 'CPU' : 'GPU';
+      let secs = 0;
+      const tick = setInterval(() => {
+        onStatus(`${delegate} 初始化中…已等待 ${++secs} 秒（首次需下载约 12MB 引擎）`);
+      }, 1000);
+      onStatus(`${delegate} 初始化中…`);
       try {
-        this.landmarker = await withTimeout(make(delegate), 12000, 'GPU 初始化超时');
-      } catch (e) {
-        if (wantsCpu) throw e;
-        console.warn('GPU 不可用，改用 CPU', e);
-        onStatus('GPU 不可用，改用 CPU 初始化…');
-        delegate = 'CPU';
-        this.landmarker = await withTimeout(make(delegate), 30000, '手势模型初始化超时，请重试');
+        try {
+          this.landmarker = await withTimeout(make(delegate), 60000, 'GPU 初始化超时');
+        } catch (e) {
+          if (wantsCpu) throw e;
+          console.warn('GPU 不可用，改用 CPU', e);
+          delegate = 'CPU';
+          onStatus('GPU 不可用，改用 CPU 初始化…');
+          this.landmarker = await withTimeout(make(delegate), 90000, '手势模型初始化超时，请重试');
+        }
+      } finally {
+        clearInterval(tick);
       }
       this.delegate = delegate;
       this.running = true;
