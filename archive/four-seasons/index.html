@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🌙</title>
+<link rel="stylesheet" href="fonts/fonts.css" />
+<style>
+  :root {
+    --blush: #fff5f7;
+    --rose-1: #ffd6e0;
+    --rose-2: #ffc3d0;
+    --lilac: #eadcf7;
+    --peach: #ffe0cc;
+    --mint:  #d9f1e8;
+    --accent: #ff6b8a;
+    --accent-deep: #f43f6e;
+    --ink: #7a3b4a;
+    --ink-soft: #b76a7e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--blush);
+    font-family: "Cormorant Garamond", "Georgia", serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    cursor: none;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* ============ 第 0 层：被揭示的世界 = 彩色 99 场 ============ */
+  .world { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+
+  .aurora {
+    position: absolute; inset: -20%;
+    background:
+      radial-gradient(40% 50% at 20% 20%, var(--rose-1) 0%, transparent 60%),
+      radial-gradient(45% 55% at 80% 25%, var(--lilac) 0%, transparent 60%),
+      radial-gradient(50% 50% at 70% 80%, var(--rose-2) 0%, transparent 60%),
+      radial-gradient(40% 55% at 15% 85%, var(--peach) 0%, transparent 55%),
+      radial-gradient(45% 50% at 45% 45%, var(--mint) 0%, transparent 60%),
+      linear-gradient(160deg, #fff0f3 0%, var(--blush) 100%);
+    filter: saturate(1.05);
+    animation: auroraDrift 26s ease-in-out infinite alternate;
+  }
+  @keyframes auroraDrift {
+    0% { transform: translate3d(0,0,0) scale(1); }
+    50% { transform: translate3d(2%,-1%,0) scale(1.06); }
+    100% { transform: translate3d(-2%,1%,0) scale(1.03); }
+  }
+
+  .nines { position: absolute; inset: 0; }
+  .nine {
+    position: absolute;
+    font-weight: 600;
+    line-height: 1;
+    user-select: none;
+    transform-origin: center;
+  }
+
+  .eyebrow {
+    position: absolute;
+    left: 0; right: 0; bottom: 34px;
+    text-align: center;
+    letter-spacing: 0.5em;
+    font-size: 13px;
+    text-transform: uppercase;
+    color: rgba(122,59,74,0.5);
+  }
+
+  /* ============ 第 1 层：磨砂玻璃盖（鼠标划过才显示） ============ */
+  .frost {
+    position: fixed; inset: 0; z-index: 3;
+    background:
+      linear-gradient(150deg, rgba(255,229,236,0.93), rgba(255,244,247,0.97)),
+      radial-gradient(circle at 50% 40%, #ffe4eb 0%, #fff5f7 70%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    -webkit-mask-image: radial-gradient(circle var(--r,150px) at var(--mx,-9999px) var(--my,-9999px), transparent 0px, transparent calc(var(--r,150px) - 26px), #000 var(--r,150px));
+    mask-image: radial-gradient(circle var(--r,150px) at var(--mx,-9999px) var(--my,-9999px), transparent 0px, transparent calc(var(--r,150px) - 26px), #000 var(--r,150px));
+    transition: opacity 1.2s ease;
+  }
+  .frost.melt { opacity: 0; pointer-events: none; }
+
+  /* ============ 第 2 层：LOVE 常显 + 进度 + 提示 ============ */
+  .love-wrap {
+    position: fixed; inset: 0; z-index: 4;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+
+  .love-svg {
+    width: min(94vw, 780px);
+    height: auto;
+    filter: drop-shadow(0 10px 30px rgba(244,63,110,0.18));
+    transition: transform 1s cubic-bezier(.2,.7,.2,1), filter .8s ease;
+  }
+  .love-svg.done {
+    transform: scale(1.06);
+    filter: drop-shadow(0 14px 40px rgba(244,63,110,0.5));
+  }
+  .love-svg .ghost {
+    fill: none;
+    stroke: rgba(122,59,74,0.16);
+    stroke-width: 26;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .love-svg .ink {
+    fill: none;
+    stroke: url(#loveGrad);
+    stroke-width: 26;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transition: stroke-dashoffset .12s linear;
+  }
+  .love-svg .swash {
+    fill: none;
+    stroke: url(#loveGrad);
+    stroke-width: 3;
+    stroke-linecap: round;
+    opacity: 0.55;
+  }
+  .start-dot {
+    fill: var(--accent-deep);
+    animation: startPulse 1.4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes startPulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.7); opacity: 0.45; }
+  }
+
+  .progress {
+    display: flex; gap: 18px;
+    margin-top: 30px;
+  }
+  .p-dot {
+    font-size: 17px;
+    color: rgba(122,59,74,0.22);
+    transition: color .35s ease, transform .35s cubic-bezier(.2,.7,.2,1);
+  }
+  .p-dot.on {
+    color: var(--accent-deep);
+    transform: scale(1.45);
+  }
+
+  .hint {
+    margin-top: 24px;
+    font-style: italic;
+    font-size: 17px;
+    letter-spacing: 0.32em;
+    text-transform: lowercase;
+    color: rgba(122,59,74,0.6);
+    animation: hintPulse 2.6s ease-in-out infinite;
+    transition: opacity .6s ease;
+  }
+  .hint.gone { opacity: 0; }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* ============ 自定义光标 ============ */
+  .cursor-dot, .cursor-ring {
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 99;
+    will-change: transform;
+  }
+  .cursor-dot {
+    width: 18px; height: 18px;
+    margin: -9px 0 0 -9px;
+    color: var(--accent-deep);
+    transition: opacity .3s ease;
+  }
+  .cursor-dot svg { width: 100%; height: 100%; display: block; }
+  .cursor-ring {
+    width: 46px; height: 46px;
+    margin: -23px 0 0 -23px;
+    border-radius: 50%;
+    border: 1px solid rgba(244,63,110,0.45);
+    transition: transform .25s cubic-bezier(.2,.7,.2,1), border-color .3s, opacity .3s;
+  }
+  .cursor-ring.ink {
+    transform: scale(0.7);
+    border-color: rgba(244,63,110,0.9);
+    background: rgba(255,107,138,0.12);
+  }
+
+  @media (hover: none) {
+    html, body { cursor: auto; }
+    .cursor-dot, .cursor-ring { display: none; }
+    .frost { --r: 120px; }
+    .hint { font-size: 15px; letter-spacing: 0.24em; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- 第 0 层：彩色 99 场 -->
+  <div class="world">
+    <div class="aurora"></div>
+    <div class="nines" id="nines"></div>
+    <div class="eyebrow">for the one i love</div>
+  </div>
+
+  <!-- 第 1 层：磨砂玻璃 -->
+  <div class="frost" id="frost"></div>
+
+  <!-- 第 2 层：LOVE + 进度 + 提示 -->
+  <div class="love-wrap" id="loveWrap">
+    <svg class="love-svg" id="loveSvg" viewBox="0 0 640 210" fill="none">
+      <defs>
+        <linearGradient id="loveGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#ff6b8a"/>
+          <stop offset="0.34" stop-color="#f43f6e"/>
+          <stop offset="0.67" stop-color="#c7a8f0"/>
+          <stop offset="1" stop-color="#f0c98c"/>
+        </linearGradient>
+      </defs>
+      <g class="ghost" id="ghostG"></g>
+      <g class="ink" id="inkG"></g>
+      <path class="swash" d="M 60 186 Q 320 206 585 182 Q 600 180 596 172" />
+      <circle class="start-dot" id="startDot" r="7" cx="0" cy="0" />
+    </svg>
+    <div class="progress" id="progress"></div>
+    <div class="hint" id="hint">&#10022; trace LOVE to enter &#10022;</div>
+  </div>
+
+  <!-- 自定义光标 -->
+  <div class="cursor-dot" id="cursorDot">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 21s-7.5-4.9-10-9.2C.4 8.6 2.2 5 5.5 5c2 0 3.4 1.1 4.5 2.6C11.1 6.1 12.5 5 14.5 5c3.3 0 5.1 3.6 3.5 6.8C19.5 16.1 12 21 12 21z"/>
+    </svg>
+  </div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+<script>
+(function () {
+  // ============ 1. 彩色 99 场 ============
+  var PALETTE = [
+    "#ff6b8a","#ff8fa3","#ff9bb3","#ffb3c1","#ffc3d0",
+    "#ff8a70","#ffb88c","#f0c98c","#c7a8f0","#b49be8",
+    "#8fd6b5","#9bc9f0","#f48fb1","#e88cb0"
+  ];
+  var ninesEl = document.getElementById("nines");
+
+  function buildNines() {
+    ninesEl.innerHTML = "";
+    var gap = 78;
+    var cols = Math.ceil(innerWidth / gap) + 2;
+    var rows = Math.ceil(innerHeight / gap) + 2;
+    var frag = document.createDocumentFragment();
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var el = document.createElement("div");
+        el.className = "nine";
+        el.textContent = "99";
+        var size = 20 + Math.random() * 52;
+        var x = c * gap + (Math.random() - 0.5) * 70;
+        var y = r * gap + (Math.random() - 0.5) * 70;
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.fontSize = size + "px";
+        el.style.color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+        el.style.opacity = (0.45 + Math.random() * 0.5).toFixed(2);
+        el.style.transform = "rotate(" + ((Math.random() - 0.5) * 40).toFixed(1) + "deg)";
+        frag.appendChild(el);
+      }
+    }
+    ninesEl.appendChild(frag);
+  }
+  buildNines();
+  var resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(buildNines, 200);
+  });
+
+  // ============ 2. LOVE 粗笔画路径（圆润手写风，方便临摹） ============
+  var LETTER_D = {
+    L: "M 58 32 Q 52 95 58 152 Q 105 158 152 152",
+    O: "M 302 92 A 62 66 0 1 1 178 92 A 62 66 0 1 1 302 92",
+    V: "M 342 32 Q 370 105 400 156 Q 430 105 458 32",
+    E: "M 600 34 Q 548 28 498 34 Q 492 94 498 152 Q 548 158 600 152 M 498 94 Q 540 90 578 94"
+  };
+  var ORDER = ["L", "O", "V", "E"];
+  var NS = "http://www.w3.org/2000/svg";
+  var ghostG = document.getElementById("ghostG");
+  var inkG = document.getElementById("inkG");
+  var loveSvg = document.getElementById("loveSvg");
+  var progressEl = document.getElementById("progress");
+  var startDot = document.getElementById("startDot");
+
+  var letters = {};
+  var currentIdx = 0;
+  var isTouch = window.matchMedia("(hover: none)").matches;
+  var THR = isTouch ? 34 : 26;           // 手指比鼠标粗，容差放大
+  var DONE_FRAC = isTouch ? 0.72 : 0.78; // 手机上描到约七成就行
+
+  ORDER.forEach(function (k, i) {
+    var d = LETTER_D[k];
+    var g = document.createElementNS(NS, "path");
+    g.setAttribute("d", d);
+    ghostG.appendChild(g);
+
+    var p = document.createElementNS(NS, "path");
+    p.setAttribute("d", d);
+    p.setAttribute("pathLength", "100");
+    inkG.appendChild(p);
+
+    var total = p.getTotalLength();
+    var samples = [];
+    var N = 48;
+    for (var s = 0; s <= N; s++) {
+      var pt = p.getPointAtLength(total * s / N);
+      samples.push({ x: pt.x, y: pt.y, done: false });
+    }
+    letters[k] = { el: p, samples: samples, done: 0, total: N + 1, complete: false };
+
+    var dot = document.createElement("span");
+    dot.className = "p-dot";
+    dot.innerHTML = "&#10084;";
+    progressEl.appendChild(dot);
+  });
+
+  function placeStartDot() {
+    if (currentIdx >= ORDER.length) {
+      startDot.style.display = "none";
+      return;
+    }
+    var sm = letters[ORDER[currentIdx]].samples[0];
+    startDot.setAttribute("cx", sm.x);
+    startDot.setAttribute("cy", sm.y);
+  }
+  placeStartDot();
+
+  function clientToSvg(cx, cy) {
+    var m = loveSvg.getScreenCTM();
+    if (!m) return null;
+    var pt = loveSvg.createSVGPoint();
+    pt.x = cx; pt.y = cy;
+    return pt.matrixTransform(m.inverse());
+  }
+
+  function updateInk(k) {
+    var rec = letters[k];
+    var frac = rec.done / rec.total;
+    rec.el.setAttribute("stroke-dashoffset", (100 * (1 - frac)).toFixed(2));
+    if (frac >= DONE_FRAC && !rec.complete) {
+      rec.complete = true;
+      rec.el.setAttribute("stroke-dashoffset", "0");
+      var dot = progressEl.children[currentIdx];
+      if (dot) dot.classList.add("on");
+      currentIdx++;
+      placeStartDot();
+      if (currentIdx >= ORDER.length) succeed();
+    }
+  }
+
+  function cover(pts) {
+    if (currentIdx >= ORDER.length) return;
+    var rec = letters[ORDER[currentIdx]];
+    if (rec.complete) return;
+    var changed = false;
+    for (var i = 0; i < rec.samples.length; i++) {
+      var sm = rec.samples[i];
+      if (sm.done) continue;
+      for (var j = 0; j < pts.length; j++) {
+        var dx = sm.x - pts[j].x, dy = sm.y - pts[j].y;
+        if (dx * dx + dy * dy < THR * THR) {
+          sm.done = true;
+          rec.done++;
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (changed) updateInk(ORDER[currentIdx]);
+  }
+
+  // ============ 3. 光标 + 揭示 + 描红 ============
+  var frost = document.getElementById("frost");
+  var hint = document.getElementById("hint");
+  var dot = document.getElementById("cursorDot");
+  var ring = document.getElementById("cursorRing");
+
+  var dotX = innerWidth / 2, dotY = innerHeight / 2;
+  var ringX = dotX, ringY = dotY;
+  var mouseX = dotX, mouseY = dotY;
+  var lastPt = null;
+  var succeeded = false;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function tickCursor() {
+    dotX = lerp(dotX, mouseX, 0.9);
+    dotY = lerp(dotY, mouseY, 0.9);
+    ringX = lerp(ringX, mouseX, 0.22);
+    ringY = lerp(ringY, mouseY, 0.22);
+    dot.style.transform = "translate3d(" + dotX + "px," + dotY + "px,0)";
+    ring.style.transform = "translate3d(" + ringX + "px," + ringY + "px,0)";
+    requestAnimationFrame(tickCursor);
+  }
+  tickCursor();
+
+  function setLight(x, y) {
+    frost.style.setProperty("--mx", x + "px");
+    frost.style.setProperty("--my", y + "px");
+  }
+
+  function succeed() {
+    if (succeeded) return;
+    succeeded = true;
+    loveSvg.classList.add("done");
+    hint.classList.add("gone");
+    frost.classList.add("melt");
+    ring.classList.add("ink");
+    setTimeout(function () {
+      window.location.href = "home.html";
+    }, 1400);
+  }
+
+  function onMove(e) {
+    if (e.isPrimary === false) return; // 忽略多指
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    setLight(e.clientX, e.clientY);
+
+    var svgPt = clientToSvg(e.clientX, e.clientY);
+    if (!svgPt) return;
+
+    var pts = [svgPt];
+    if (lastPt) {
+      var dx = svgPt.x - lastPt.x, dy = svgPt.y - lastPt.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var steps = Math.max(1, Math.floor(dist / 6));
+      for (var s = 1; s < steps; s++) {
+        pts.push({ x: lastPt.x + dx * s / steps, y: lastPt.y + dy * s / steps });
+      }
+    }
+    lastPt = svgPt;
+    cover(pts);
+  }
+
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerdown", onMove);
+  window.addEventListener("pointerup", function () { lastPt = null; });
+  window.addEventListener("pointercancel", function () { lastPt = null; });
+})();
+</script>
+</body>
+</html>

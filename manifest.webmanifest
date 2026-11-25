@@ -1,0 +1,33 @@
+{
+  "name": "掌中万象 · 用手势召唤万物",
+  "short_name": "掌中万象",
+  "description": "在手机摄像头前摊开手掌，把世界奇观、人体器官、发动机与机械装置化作万千光点，捏合、旋转、拆开来看。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#03050a",
+  "theme_color": "#03050a",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
