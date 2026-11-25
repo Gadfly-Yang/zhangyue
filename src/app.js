@@ -842,6 +842,10 @@ function boot() {
     return;
   }
   const start = document.getElementById('start');
+  if (!isSecureContext) {
+    const msg = document.getElementById('startMsg');
+    if (msg) msg.textContent = '当前不是 HTTPS 安全连接，手机浏览器会禁用摄像头；可以先点“先不用摄像头”，用按钮和触摸体验。';
+  }
   const hideStart = () => { start.hidden = true; };
   document.getElementById('bStartCam').onclick = async () => { if (await app.startCamera()) hideStart(); };
   document.getElementById('bStartNoCam').onclick = () => { hideStart(); app.toast(MOBILE ? '直接点底部的「召唤」和「成型」开始' : '键盘：空格 召唤 · F 握拳 · O 张开 · E 展开 · D 演示 · H 帮助'); };
