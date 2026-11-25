@@ -802,7 +802,7 @@ class App {
     } catch (e) {
       console.error(e);
       const text = e.name === 'NotAllowedError' ? '摄像头权限被拒绝——仍可用键盘、鼠标和演示模式。'
-        : e.name === 'NotFoundError' ? '没有找到摄像头——仍可用键盘、鼠标和演示模式。' : `摄像头出错：${e.message}`;
+        : e.name === 'NotFoundError' ? '没有找到摄像头——仍可用键盘、鼠标和演示模式。' : `无法开启手势：${e.message}`;
       msg.textContent = text; this.toast(text);
       this.cam?.stop(); this.cam = null; this.camOn = false;
       return false;
