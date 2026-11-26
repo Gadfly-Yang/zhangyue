@@ -1,5 +1,5 @@
 // Hand pose (OPEN / FIST / PEACE / OTHER), continuous openness, and snap detection from MediaPipe's
-// 21 normalized landmarks. Port of wondersnap/gestures.py (same thresholds) + openness and peace sign.
+// 21 normalized landmarks. Static poses are based on wondersnap/gestures.py.
 export const WRIST = 0, THUMB_TIP = 4, MIDDLE_MCP = 9, MIDDLE_TIP = 12;
 export const TIPS = [8, 12, 16, 20], PIPS = [6, 10, 14, 18], MCPS = [5, 9, 13, 17];
 export const OPEN = 'open', FIST = 'fist', PEACE = 'peace', POINT = 'point', OTHER = 'other', NONE = 'none';
@@ -17,7 +17,7 @@ export const STANDARD = Object.freeze({
 // A single 0.03 normalized-ratio tolerance admits mildly bent synthetic poses while keeping a broad
 // OTHER band between fist and open. Marginal tests sit halfway between the old and new boundaries,
 // and openness endpoints move inward by the same bounded amount instead of adding separate tuning.
-// Snap and pinch deliberately continue to use STANDARD internally.
+// Snap and pinch are independent of the selected static-pose profile.
 export const FORGIVING = Object.freeze({
   extendedFingerRatio: 1.12,
   curledFingerRatio: 1.28,
@@ -84,36 +84,63 @@ export class PoseDebouncer {
   }
 }
 
-/** Thumb+middle tips pressed, then released fast. A tracking dropout (motion blur) between press and
- *  release grants extra time. Rejects: slow opening, held pinch, a fist opening. */
+/** A snap starts with thumb–middle contact and ends as the middle finger folds toward the palm. */
 export class SnapDetector {
-  constructor({ close = 0.35, open = 0.75, maxReleaseS = 0.1, cooldownS = 0.8, dropoutS = 0.15 } = {}) {
+  constructor({ close = 0.44, open = 0.52, maxReleaseS = 0.18, cooldownS = 0.8, dropoutS = 0.12 } = {}) {
     Object.assign(this, { close, open, maxReleaseS, cooldownS, dropoutS });
-    this.pressedAt = null; this.hadDropout = false; this.lastFire = -1e9;
+    this.press = null;
+    this.hadDropout = false;
+    this.lastFire = -Infinity;
   }
-  update(lm, t) {
+
+  update(lm, t, aspect = 1) {
     if (!lm) {
-      if (this.pressedAt !== null) {
-        if (t - this.pressedAt > this.maxReleaseS + this.dropoutS) this.pressedAt = null;
-        else this.hadDropout = true;
+      this.hadDropout = true;
+      if (this.press && t - this.press.t > this.maxReleaseS + this.dropoutS) this.press = null;
+      return false;
+    }
+
+    // Map normalized camera coordinates to the same units on both axes before measuring the hand.
+    const wrist = lm[WRIST], knuckle = lm[MIDDLE_MCP], middle = lm[MIDDLE_TIP], thumb = lm[THUMB_TIP];
+    const palmX = (knuckle[0] - wrist[0]) * aspect, palmY = knuckle[1] - wrist[1];
+    const palmLength = Math.hypot(palmX, palmY);
+    if (palmLength < 1e-6) {
+      this.press = null;
+      return false;
+    }
+
+    const gap = Math.hypot((thumb[0] - middle[0]) * aspect, thumb[1] - middle[1]) / palmLength;
+    // The palm axis measures flexion independently of the hand's rotation in the image.
+    // Its origin is the wrist (0) and the middle knuckle is one palm length away (1).
+    const middleReach = ((middle[0] - wrist[0]) * aspect * palmX + (middle[1] - wrist[1]) * palmY) / (palmLength * palmLength);
+    if (gap < this.close) {
+      const index = lm[TIPS[0]];
+      const indexGap = Math.hypot((thumb[0] - index[0]) * aspect, thumb[1] - index[1]) / palmLength;
+      // The middle fingertip is near the knuckle in the ready pose and the thumb is clear of the index.
+      const nearKnuckle = middleReach >= 0.9;
+      const indexClear = indexGap > 0.32 && indexGap - gap > 0.05;
+      if (!indexClear || (!nearKnuckle && gap < 0.22)) {
+        this.press = null;
+      } else if (nearKnuckle) {
+        this.press = { t, gap, middleReach };
+        this.hadDropout = false;
       }
+      // A curled middle finger with the tips starting to part can be a frame mid-release.
       return false;
     }
-    const r = d(lm[THUMB_TIP], lm[MIDDLE_TIP]) / handScale(lm);
-    if (r < this.close) {
-      // a closed fist also brings thumb and middle tip together: that is not a snap "press"
-      // This intentionally uses classify()'s STANDARD default regardless of controller sensitivity.
-      if (classify(lm) === FIST) this.pressedAt = null;
-      else { this.pressedAt = t; this.hadDropout = false; }
+
+    const press = this.press;
+    if (!press) return false;
+    const elapsed = t - press.t;
+    if (elapsed <= 0 || elapsed > this.maxReleaseS + (this.hadDropout ? this.dropoutS : 0)) {
+      this.press = null;
       return false;
     }
-    if (this.pressedAt === null) return false;
-    if (t - this.pressedAt > this.maxReleaseS + (this.hadDropout ? this.dropoutS : 0)) { this.pressedAt = null; return false; }
-    if (r > this.open) {
-      this.pressedAt = null;
-      if (middleExtended(lm)) return false;            // real snap: the middle finger slams DOWN into the palm
-      if (t - this.lastFire >= this.cooldownS) { this.lastFire = t; return true; }
-    }
-    return false;
+    if (gap < this.open || gap - press.gap < 0.18 || press.middleReach - middleReach < 0.12) return false;
+
+    this.press = null;
+    if (t - this.lastFire < this.cooldownS) return false;
+    this.lastFire = t;
+    return true;
   }
 }

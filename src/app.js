@@ -24,11 +24,11 @@ const DWELL_S = 0.45;          // point at a part this long to select it
 const QUIZ_LEN = 5;
 
 const CFG = {
-  n: clamp(parseInt(qs.get('n'), 10) || (MOBILE ? 110000 : 200000), 5000, 1000000),
+  n: clamp(parseInt(qs.get('n'), 10) || (MOBILE ? 56000 : 200000), 5000, 1000000),
   manual: qs.get('manual') === '1',             // tests: deterministic clock, frames only via wonderSnap.advance()
   autostart: qs.get('autostart'),                // 'camera' | 'nocamera'
   start: clamp(parseInt(qs.get('model'), 10) || 0, 0, CATALOG.length - 1),
-  dpr: qs.get('dpr') ? parseFloat(qs.get('dpr')) : Math.min(window.devicePixelRatio || 1, MOBILE ? 1.5 : 2),
+  dpr: qs.get('dpr') ? parseFloat(qs.get('dpr')) : Math.min(window.devicePixelRatio || 1, MOBILE ? 1.25 : 2),
   trails: qs.get('trails') !== '0' && !MOBILE,
 };
 
@@ -119,7 +119,7 @@ class App {
     this.canvas = $('gl'); this.overlay = $('overlay'); this.octx = this.overlay.getContext('2d');
     this.video = $('cam');
     this.renderer = new Renderer(this.canvas, CFG.n, { preserve: CFG.manual });
-    this.ctl = new Controller(CATALOG.length, isMachine);
+    this.ctl = new Controller(CATALOG.length, isMachine, MOBILE ? 3 : 4);
     this.ctl.state.index = CFG.start;
     this.store = new ModelStore(CFG.n);
     this.model = null; this.uploaded = -1; this.uploadT = 0;
@@ -170,8 +170,8 @@ class App {
     // 1. hand input — real camera (up to 2 hands), else synthetic streams (tests / demo) at camera rate (30 Hz)
     ctl.aspect = this.cam?.running && this.video.videoWidth ? this.video.videoWidth / this.video.videoHeight : 1;
     if (this.cam?.running) {
-      const hands = this.cam.poll();
-      if (hands !== undefined) ctl.onHands(hands, t);
+      const hands = this.cam.poll(t);
+      if (hands !== undefined) ctl.onHands(hands, this.cam.sampleTime);
       if (this.cam.newFrame) { this.renderer.uploadVideo(this.video); this.cam.newFrame = false; this.hasVideo = true; }
     }
     if (this.demo) this.demo.tick(t);
@@ -283,7 +283,11 @@ class App {
 
     const kick = st.consumeKick() ? 1 : 0;                                // one-frame impulse, read exactly once
     const sel = this.sel >= 0 && formed ? this.sel : -100;
-    this.renderer.step({ dt, time: t, mode, formT, kick, rot, sphereR: 0.85, explode: this.explode, scale, exCenter, sel, pull: [0, 0, 0.5 * this.pullAmt] });
+    const sleeping = MOBILE && !CFG.manual && mode === SIM.idle;
+    if (!sleeping || !this.particlesIdle) {
+      this.renderer.step({ dt: sleeping ? 1 : dt, time: t, mode, formT, kick, rot, sphereR: 0.85, explode: this.explode, scale, exCenter, sel, pull: [0, 0, 0.5 * this.pullAmt] });
+    }
+    this.particlesIdle = sleeping;
 
     // 8. colour morph + per-part colours once a machine has formed
     const k = 1 - Math.exp(-dt * 4);
@@ -599,7 +603,7 @@ class App {
 
   guideItems(machine) {
     return [
-      ['snap', '🫰', '<b>打响指</b> — 召唤光点 / 让一切消散'],
+      ['snap', '🫰', '<b>响指</b> — 拇指贴中指，再向掌心弹下'],
       ['fist', '✊', machine ? '<b>握拳</b> — 把模型合拢' : '<b>握拳</b> — 让光点汇聚成型'],
       ['open', '✋', machine ? '<b>慢慢张开手</b> — 拆开，看看内部' : '<b>张开手掌</b> — 变成下一个奇观'],
       ['twist', '🔄', '<b>转动手腕 / 抬高放低</b> — 旋转与俯仰'],
@@ -797,7 +801,7 @@ class App {
       this.cam = this.cam || new HandCamera(this.video);
       await this.cam.start((s) => { msg.textContent = s; if (s) this.toast(s); });
       this.camOn = true; this.$('bCam').classList.add('on');
-      this.toast('📷 摄像头已开启，打个响指试试');
+      this.toast('📷 摄像头已开启，打响指或点「召唤」');
       return true;
     } catch (e) {
       console.error(e);

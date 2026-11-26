@@ -52,7 +52,7 @@ export class Controller {
   onHand(lm, t) {
     const raw = classify(lm, this.gestureProfile);
     const [stable, changed] = this.debounce.update(raw);
-    const snapped = this.snap.update(lm, t);
+    const snapped = this.snap.update(lm, t, this.aspect);
     this.rawPose = raw;
     this._pinchN = pinched(lm) ? this._pinchN + 1 : 0;
     const was = this.pinch;
