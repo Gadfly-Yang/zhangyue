@@ -3,6 +3,9 @@
 const VISION = new URL('../vendor/mediapipe/vision_bundle.mjs', import.meta.url).href;
 const WASM = new URL('../vendor/mediapipe/wasm', import.meta.url).href;
 const MODEL = new URL('../models/hand_landmarker.task', import.meta.url).href;
+const MODEL_CACHE = 'wanxiang-hand-model';
+// SHA-256 of hand_landmarker.task. Update this when replacing the model file.
+const MODEL_VERSION = 'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1';
 const MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) <= 500;
 
 function withTimeout(promise, ms, message) {
@@ -34,6 +37,31 @@ async function fetchModel(url, onStatus, signal) {
   let off = 0;
   for (const c of chunks) { out.set(c, off); off += c.length; }
   return out;
+}
+
+async function loadModel(onStatus, signal) {
+  let cache;
+  try {
+    cache = await globalThis.caches?.open(MODEL_CACHE);
+    const cached = await cache?.match(MODEL);
+    if (cached?.headers.get('X-Model-Version') === MODEL_VERSION) {
+      return new Uint8Array(await cached.arrayBuffer());
+    }
+  } catch {
+    // The tracker still works when browser storage is unavailable.
+  }
+
+  const model = await fetchModel(MODEL, onStatus, signal);
+  if (cache && !signal.aborted) {
+    // Verify the complete download before caching it, off the startup path.
+    void globalThis.crypto?.subtle?.digest('SHA-256', model).then((hash) => {
+      const version = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+      if (version === MODEL_VERSION) {
+        return cache.put(MODEL, new Response(model, { headers: { 'X-Model-Version': version } }));
+      }
+    }).catch(() => {});
+  }
+  return model;
 }
 
 export class HandCamera {
@@ -84,7 +112,7 @@ export class HandCamera {
         }
         return { HandLandmarker, fileset };
       });
-    const model = fetchModel(MODEL, (status) => {
+    const model = loadModel((status) => {
       if (showProgress) onStatus(status);
     }, download.signal);
     const assets = Promise.all([engine, model]);
