@@ -11,8 +11,8 @@ function withTimeout(promise, ms, message) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-async function fetchModel(url, onStatus) {
-  const res = await fetch(url);
+async function fetchModel(url, onStatus, signal) {
+  const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`模型下载失败（HTTP ${res.status}）`);
   if (!res.body) return new Uint8Array(await res.arrayBuffer());
   const reader = res.body.getReader();
@@ -39,6 +39,7 @@ async function fetchModel(url, onStatus) {
 export class HandCamera {
   constructor(video) {
     this.video = video;
+    this.starting = null;
     this.landmarker = null;
     this.stream = null;
     this.running = false;
@@ -54,21 +55,50 @@ export class HandCamera {
     this.newFrame = false;       // a new video frame arrived since the last poll (renderer uploads it)
   }
 
-  async start(onStatus = () => {}) {
+  start(onStatus = () => {}) {
+    this.starting ??= this.startTracking(onStatus).finally(() => { this.starting = null; });
+    return this.starting;
+  }
+
+  async startTracking(onStatus) {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('这个浏览器无法访问摄像头（需要 https 或 localhost）。');
     onStatus('正在请求摄像头…');
     const video = MOBILE ? { width: { ideal: 960 }, height: { ideal: 720 }, facingMode: 'user', frameRate: { ideal: 24 } }
       : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user', frameRate: { ideal: 30 } };
-    this.stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
-    this.video.srcObject = this.stream;
-    this.video.muted = true; this.video.playsInline = true;
-    await this.video.play();
+    const camera = navigator.mediaDevices.getUserMedia({ video, audio: false });
+    const download = new AbortController();
+    let showProgress = false;
+    let wasmPreload;
+
+    const engine = withTimeout(import(VISION), 25000, '手势引擎下载超时，请检查网络后重试')
+      .then(async ({ FilesetResolver, HandLandmarker }) => {
+        const fileset = await withTimeout(FilesetResolver.forVisionTasks(WASM), 30000, '手势引擎初始化超时，请重试');
+        if (!download.signal.aborted) {
+          // Match MediaPipe's fetch so it can reuse the selected WASM download.
+          wasmPreload = document.createElement('link');
+          wasmPreload.rel = 'preload';
+          wasmPreload.as = 'fetch';
+          wasmPreload.crossOrigin = 'anonymous';
+          wasmPreload.href = fileset.wasmBinaryPath;
+          document.head.append(wasmPreload);
+        }
+        return { HandLandmarker, fileset };
+      });
+    const model = fetchModel(MODEL, (status) => {
+      if (showProgress) onStatus(status);
+    }, download.signal);
+    const assets = Promise.all([engine, model]);
+    // Keep the camera permission result first even if a download fails while it is pending.
+    void assets.catch(() => {});
+
     try {
+      this.stream = await camera;
+      this.video.srcObject = this.stream;
+      this.video.muted = true; this.video.playsInline = true;
+      await this.video.play();
+      showProgress = true;
       onStatus('正在加载手势识别引擎…');
-      const { FilesetResolver, HandLandmarker } = await withTimeout(import(VISION), 25000, '手势引擎下载超时，请检查网络后重试');
-      const fileset = await withTimeout(FilesetResolver.forVisionTasks(WASM), 30000, '手势引擎初始化超时，请重试');
-      onStatus('正在下载手势模型…');
-      const modelBuf = await fetchModel(MODEL, onStatus);
+      const [{ HandLandmarker, fileset }, modelBuf] = await assets;
       const make = (delegate) => HandLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetBuffer: modelBuf, delegate },
         runningMode: 'VIDEO', numHands: 2,
@@ -78,7 +108,7 @@ export class HandCamera {
       let delegate = wantsCpu ? 'CPU' : 'GPU';
       let secs = 0;
       const tick = setInterval(() => {
-        onStatus(`${delegate} 初始化中…已等待 ${++secs} 秒（首次需下载约 12MB 引擎）`);
+        onStatus(`${delegate} 初始化中…已等待 ${++secs} 秒`);
       }, 1000);
       onStatus(`${delegate} 初始化中…`);
       try {
@@ -100,6 +130,9 @@ export class HandCamera {
     } catch (e) {
       this.stop();
       throw e;
+    } finally {
+      download.abort();
+      wasmPreload?.remove();
     }
   }
 
