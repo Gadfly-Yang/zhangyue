@@ -463,7 +463,7 @@ class App {
     this.lastRecording = { size: blob.size, type: blob.type };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `zhangzhong-wanxiang-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.webm`;
+    a.download = `wanxiang-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.webm`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
     this.toast(`💾 已保存 ${(blob.size / 1e6).toFixed(1)} MB 视频`);
