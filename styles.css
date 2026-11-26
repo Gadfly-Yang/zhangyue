@@ -258,13 +258,26 @@ a { color: var(--accent); text-underline-offset: 3px; }
 .start {
   position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 14px;
   background: radial-gradient(ellipse at 50% 35%, rgba(24, 48, 82, 0.6), rgba(0, 0, 0, 0.9));
-  overflow-y: auto;
 }
 .start[hidden] { display: none; }
 .start-card {
   width: min(560px, 100%); max-height: calc(100dvh - 28px); overflow-y: auto;
   padding: 24px 20px calc(22px + var(--safe-b)); text-align: center;
   background: rgba(8, 13, 24, 0.86);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: min(78dvh, 600px);
+}
+.start-card .hero-title {
+  margin: 0; font-size: clamp(64px, 22vw, 140px); letter-spacing: 0.18em; font-weight: 900;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #66e0ff 0%, #ffd166 50%, #ff8fab 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 24px rgba(102, 224, 255, 0.25));
+}
+.start-card .hero-sub {
+  color: rgba(255, 255, 255, 0.5); font-size: clamp(15px, 4.5vw, 24px);
+  letter-spacing: 0.4em; margin: 16px 0 0; font-weight: 300;
 }
 .start-card h1 { margin: 2px 0 4px; font-size: 31px; letter-spacing: 0.12em; font-weight: 800; }
 .start-card p { color: var(--muted); margin: 0 0 10px; line-height: 1.6; font-size: 13px; }
@@ -272,7 +285,7 @@ a { color: var(--accent); text-underline-offset: 3px; }
 .steps { text-align: left; color: var(--muted); line-height: 1.6; margin: 4px 0 16px; padding-left: 20px; font-size: 13px; }
 .steps li { margin-bottom: 5px; }
 .steps b { color: var(--text); }
-.start-buttons { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap; }
+.start-buttons { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap; margin-top: auto; padding-top: 32px; }
 .start-buttons button {
   padding: 12px 20px; font-size: 14.5px; border-radius: 12px;
   background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14);
@@ -323,9 +336,10 @@ button:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid
 @keyframes modalIn { from { transform: translate(-50%, -47%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
 
 @media (max-height: 660px) {
-  .start-card { padding-top: 16px; }
-  .start-card h1 { font-size: 26px; }
-  .start-card .steps { font-size: 12px; line-height: 1.5; }
+  .start-card { padding-top: 16px; min-height: auto; }
+  .start-card .hero-title { font-size: clamp(40px, 12vw, 80px); }
+  .start-card .hero-sub { font-size: clamp(12px, 3vw, 16px); }
+  .start-buttons { padding-top: 20px; }
   .start-card p { font-size: 12px; }
 }
 
